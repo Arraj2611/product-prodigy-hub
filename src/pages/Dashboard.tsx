@@ -1,6 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { RevenueChart } from "@/components/charts/RevenueChart";
+import { ProductPerformanceChart } from "@/components/charts/ProductPerformanceChart";
+import { MarketDemandChart } from "@/components/charts/MarketDemandChart";
 import { 
   TrendingUp, 
   Package, 
@@ -8,7 +11,8 @@ import {
   DollarSign,
   ArrowUpRight,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  BarChart3
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -198,6 +202,28 @@ export default function Dashboard() {
               </p>
             </div>
           </Card>
+        </div>
+
+        {/* Analytics Section */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">Business Analytics</h2>
+              <p className="text-sm text-muted-foreground">
+                Real-time insights and performance metrics
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <RevenueChart />
+            <ProductPerformanceChart />
+          </div>
+
+          <MarketDemandChart />
         </div>
       </div>
     </div>

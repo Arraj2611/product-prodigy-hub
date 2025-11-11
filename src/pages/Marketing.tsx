@@ -2,6 +2,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { CampaignROIChart } from "@/components/charts/CampaignROIChart";
+import { EngagementFunnelChart } from "@/components/charts/EngagementFunnelChart";
 import { 
   TrendingUp, 
   Users, 
@@ -13,7 +15,8 @@ import {
   Youtube,
   Play,
   Pause,
-  BarChart3
+  BarChart3,
+  Target
 } from "lucide-react";
 
 export default function Marketing() {
@@ -306,6 +309,67 @@ export default function Marketing() {
             ))}
           </div>
         </Card>
+
+        {/* Analytics Charts */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Target className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">Campaign Analytics</h2>
+              <p className="text-sm text-muted-foreground">
+                Detailed performance metrics and conversion insights
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <CampaignROIChart />
+            <EngagementFunnelChart />
+          </div>
+
+          {/* AI Recommendations */}
+          <Card className="p-6 border-border/50 bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <BarChart3 className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-3">AI Marketing Insights</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Increase TikTok Budget</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        TikTok shows 220% ROI. Consider reallocating 30% from Twitter for maximum efficiency.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
+                    <Target className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Optimize Posting Times</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Engagement peaks at 7-9 PM EST. Schedule posts during this window for 24% higher reach.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
+                    <Users className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Target Lookalike Audiences</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Create lookalike audiences from your top 5% converters to reduce CPA by estimated 18%.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

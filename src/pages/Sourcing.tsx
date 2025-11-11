@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PriceTrendChart } from "@/components/charts/PriceTrendChart";
 import { 
   MapPin, 
   TrendingUp, 
@@ -10,7 +11,8 @@ import {
   DollarSign,
   Star,
   ArrowRight,
-  Globe
+  Globe,
+  LineChart
 } from "lucide-react";
 
 export default function Sourcing() {
@@ -238,6 +240,77 @@ export default function Sourcing() {
                 </div>
               </Card>
             ))}
+
+            {/* Price Trends Chart */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <LineChart className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Market Intelligence</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Live commodity pricing and trend analysis
+                  </p>
+                </div>
+              </div>
+              <PriceTrendChart />
+            </div>
+
+            {/* Market Insights */}
+            <Card className="p-6 border-border/50 bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur">
+              <h3 className="text-lg font-semibold mb-4">Supply Chain Insights</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Cotton Prices</span>
+                    <Badge variant="outline" className="gap-1 text-destructive border-destructive/30">
+                      <TrendingUp className="w-3 h-3" />
+                      +3.2%
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Rising due to seasonal demand in Asian markets
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Hardware Costs</span>
+                    <Badge variant="outline" className="gap-1 text-success border-success/30">
+                      <TrendingDown className="w-3 h-3" />
+                      -1.8%
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Decreased production costs in European suppliers
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Labor Rates</span>
+                    <Badge variant="outline" className="gap-1 text-warning border-warning/30">
+                      <TrendingUp className="w-3 h-3" />
+                      +2.1%
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Gradual increase in manufacturing wages globally
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Shipping Costs</span>
+                    <Badge variant="outline" className="gap-1 text-success border-success/30">
+                      <TrendingDown className="w-3 h-3" />
+                      -5.4%
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Improved logistics efficiency and fuel savings
+                  </p>
+                </div>
+              </div>
+            </Card>
           </TabsContent>
 
           {/* Markets Tab */}
