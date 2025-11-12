@@ -1,6 +1,52 @@
-# Welcome to your Lovable project
+# SourceFlow - AI-Powered Creation-to-Commerce Platform
 
-## Project info
+An end-to-end production-grade system for AI-powered product creation, BOM generation, sourcing, and sales optimization.
+
+## Quick Start
+
+See the [Documentation](docs/) folder for setup guides:
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get running in 5 minutes
+- **[Local Testing Setup](docs/LOCAL_TESTING_SETUP.md)** - Complete setup guide
+
+## Documentation
+
+All documentation is located in the [`docs/`](docs/) folder:
+- **[Requirements](docs/requirements/)** - BRD, FRD, and Use Cases
+- **[Setup Guides](docs/)** - Setup guides and checklists
+- Integration documentation
+- Troubleshooting guides
+- Environment configuration
+
+## Project Structure
+
+```
+├── src/              # Frontend React application
+├── backend/          # Node.js/Express API server
+├── ai-service/       # Python FastAPI AI service (Gemini)
+└── docs/             # Documentation and setup guides
+```
+
+## Technologies
+
+**Frontend:**
+- React 18 + TypeScript
+- Vite 7
+- shadcn-ui + Tailwind CSS
+- TanStack Query
+
+**Backend:**
+- Node.js + Express
+- PostgreSQL + Prisma ORM
+- Redis caching
+- JWT authentication
+
+**AI Service:**
+- Python FastAPI
+- Google Gemini API (Free Tier)
+
+---
+
+## Original Lovable Project Info
 
 **URL**: https://lovable.dev/projects/7e0307af-087b-498e-887e-5b28184b8998
 

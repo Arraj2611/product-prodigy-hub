@@ -1,12 +1,10 @@
 # Dependencies
 node_modules/
 package-lock.json
-bun.lockb
 
 # Build output
 dist/
 build/
-*.tsbuildinfo
 
 # Environment variables
 .env
@@ -39,17 +37,7 @@ coverage/
 *.db
 *.db-journal
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-.venv
-
 # Misc
 .cache/
 .temp/
+

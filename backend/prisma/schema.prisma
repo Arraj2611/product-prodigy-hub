@@ -1,0 +1,310 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CREATOR
+  BRAND
+  ADMIN
+}
+
+enum ProductStatus {
+  DRAFT
+  PROCESSING
+  BOM_GENERATED
+  SOURCING
+  READY
+  ARCHIVED
+}
+
+enum BOMStatus {
+  DRAFT
+  PENDING_VERIFICATION
+  VERIFIED
+  LOCKED
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+}
+
+enum MaterialType {
+  FABRIC
+  TRIM
+  HARDWARE
+  NOTION
+  PACKAGING
+  LABELING
+}
+
+enum CertificationType {
+  GOTS
+  FAIR_TRADE
+  FSC
+  OEKO_TEX
+  ORGANIC
+  RECYCLED
+  OTHER
+}
+
+// User Management
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String?
+  role          UserRole  @default(CREATOR)
+  emailVerified Boolean   @default(false)
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  products      Product[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  refreshToken String?  @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// Product Management
+model Product {
+  id          String        @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  status      ProductStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assets      ProductAsset[]
+  boms        BOM[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ProductAsset {
+  id          String   @id @default(uuid())
+  productId   String
+  type        String   // 'image' | 'video'
+  url         String
+  storageKey  String
+  metadata    Json?    // Color, texture, fabrication tags
+  size        Int?     // File size in bytes
+  mimeType    String?
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+// BOM Management
+model BOM {
+  id              String    @id @default(uuid())
+  productId       String
+  status          BOMStatus @default(DRAFT)
+  confidence      Float?    // AI confidence score (0-1)
+  totalCost       Decimal?  @precision(10, 2)
+  yieldBuffer     Float     @default(10.0) // Percentage
+  version         Int       @default(1)
+  lockedAt        DateTime?
+  verifiedBy      String?   // User ID who verified
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  items           BOMItem[]
+  versions        BOMVersion[]
+
+  @@index([productId])
+  @@index([status])
+}
+
+model BOMVersion {
+  id        String   @id @default(uuid())
+  bomId     String
+  version   Int
+  data      Json     // Snapshot of BOM data
+  createdAt DateTime @default(now())
+
+  bom BOM @relation(fields: [bomId], references: [id], onDelete: Cascade)
+
+  @@unique([bomId, version])
+  @@index([bomId])
+}
+
+model BOMItem {
+  id            String      @id @default(uuid())
+  bomId         String
+  category      String      // Shell Fabrication, Trims & Hardware, etc.
+  name          String
+  type          MaterialType
+  quantity      Decimal     @precision(10, 3)
+  unit          String      // meter, piece, kg, etc.
+  unitCost      Decimal?    @precision(10, 2)
+  totalCost     Decimal?    @precision(10, 2)
+  specifications Json?      // Material specs
+  source        String?     // Country/region
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  bom BOM @relation(fields: [bomId], references: [id], onDelete: Cascade)
+
+  @@index([bomId])
+  @@index([type])
+}
+
+// Material Catalog
+model Material {
+  id            String      @id @default(uuid())
+  name          String
+  type          MaterialType
+  description   String?
+  specifications Json?      // Standard specs
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  supplierMaterials SupplierMaterial[]
+
+  @@index([type])
+  @@index([name])
+}
+
+// Supplier Management
+model Supplier {
+  id              String         @id @default(uuid())
+  name            String
+  location        String         // City, Country
+  country         String
+  city            String
+  coordinates     Json?         // [longitude, latitude]
+  status          SupplierStatus @default(PENDING_VERIFICATION)
+  rating          Float?          @default(0) // 0-5
+  reliability     Float?          @default(0) // 0-100
+  riskIndex       Float?          @default(0) // 0-100
+  website         String?
+  contactEmail    String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  materials       SupplierMaterial[]
+  certifications  SupplierCertification[]
+  priceHistory    CommodityPrice[]
+
+  @@index([country])
+  @@index([status])
+  @@index([rating])
+}
+
+model SupplierMaterial {
+  id              String   @id @default(uuid())
+  supplierId      String
+  materialId      String?
+  materialName    String   // Denormalized for flexibility
+  unitPrice       Decimal  @precision(10, 2)
+  unit            String   // meter, piece, kg, etc.
+  moq             String?  // Minimum Order Quantity
+  leadTime        String?  // e.g., "45 days"
+  availability    Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  material Material? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+
+  @@index([supplierId])
+  @@index([materialId])
+}
+
+model SupplierCertification {
+  id              String           @id @default(uuid())
+  supplierId      String
+  type            CertificationType
+  certificateId   String?
+  issuedBy        String?
+  issuedDate      DateTime?
+  expiryDate      DateTime?
+  verified        Boolean          @default(false)
+  verifiedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
+  @@index([type])
+  @@index([verified])
+}
+
+// Commodity Pricing
+model CommodityPrice {
+  id            String   @id @default(uuid())
+  commodity     String   // e.g., "Cotton", "Polyester"
+  supplierId    String?
+  unitPrice     Decimal  @precision(10, 4)
+  unit          String   // per meter, kg, etc.
+  currency      String   @default("USD")
+  source        String   // API source name
+  date          DateTime
+  volatility    Float?   // Price volatility percentage
+  createdAt     DateTime @default(now())
+
+  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([commodity])
+  @@index([date])
+  @@index([supplierId])
+}
+
+// Audit Logs (7-year retention requirement)
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String   // e.g., "BOM_CREATED", "SUPPLIER_SELECTED"
+  entityType  String   // e.g., "BOM", "SUPPLIER"
+  entityId    String?
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}
+

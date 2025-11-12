@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: sourceflow-postgres
+    environment:
+      POSTGRES_USER: sourceflow_user
+      POSTGRES_PASSWORD: sourceflow_password
+      POSTGRES_DB: sourceflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sourceflow_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sourceflow-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sourceflow-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sourceflow-network
+
+  # Backend API (development)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sourceflow-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://sourceflow_user:sourceflow_password@postgres:5432/sourceflow_db?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: development-jwt-secret-change-in-production-min-32-chars
+      JWT_REFRESH_SECRET: development-refresh-secret-change-in-production-min-32-chars
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sourceflow-network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  sourceflow-network:
+    driver: bridge
+
