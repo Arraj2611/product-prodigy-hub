@@ -11,16 +11,19 @@ import {
   Video, 
   X,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Zap
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useDemo } from "@/contexts/DemoContext";
 
 export default function Upload() {
   const [files, setFiles] = useState<File[]>([]);
   const [productName, setProductName] = useState("");
   const [description, setDescription] = useState("");
   const navigate = useNavigate();
+  const { startDemo } = useDemo();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -32,12 +35,45 @@ export default function Upload() {
     setFiles(files.filter((_, i) => i !== index));
   };
 
+  const handleUseExample = () => {
+    setProductName("Premium Denim Jacket");
+    setDescription("A high-quality denim jacket with metal buttons, zipper closure, and decorative stitching. Features include two front pockets, adjustable cuffs, and a classic collar design.");
+    
+    // Simulate file upload with a placeholder
+    const exampleFile = new File([""], "denim-jacket.jpg", { type: "image/jpeg" });
+    setFiles([exampleFile]);
+
+    toast.success("Example product loaded! Starting AI analysis...");
+    
+    // Start the demo and navigate through pages
+    setTimeout(() => {
+      startDemo();
+      toast.info("Analyzing product materials...");
+      navigate("/bom");
+      
+      setTimeout(() => {
+        toast.info("Finding best suppliers...");
+        navigate("/sourcing");
+        
+        setTimeout(() => {
+          toast.info("Generating marketing campaigns...");
+          navigate("/marketing");
+          
+          setTimeout(() => {
+            toast.success("Demo tour complete! Explore the features.");
+          }, 2000);
+        }, 3000);
+      }, 3000);
+    }, 1500);
+  };
+
   const handleSubmit = () => {
     if (!productName || files.length === 0) {
       toast.error("Please add product name and at least one image");
       return;
     }
     
+    startDemo();
     toast.success("Product uploaded successfully! AI is analyzing...");
     setTimeout(() => {
       navigate("/bom");
@@ -48,14 +84,24 @@ export default function Upload() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <div className="max-w-5xl mx-auto p-6 space-y-8 animate-fade-in">
         {/* Header */}
-        <div className="space-y-2">
+        <div className="space-y-4">
           <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
             <Sparkles className="w-8 h-8 text-primary" />
             Upload Product
           </h1>
-          <p className="text-muted-foreground">
-            Upload images or videos of your product, and let AI decompose it into materials
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground">
+              Upload images or videos of your product, and let AI decompose it into materials
+            </p>
+            <Button 
+              onClick={handleUseExample}
+              variant="outline"
+              className="gap-2 border-primary/50 hover:bg-primary/10"
+            >
+              <Zap className="w-4 h-4 text-primary" />
+              Use Example Product
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">

@@ -1,17 +1,26 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Package, Plus, Bell, User } from "lucide-react";
+import { Package, Plus, Bell, User, RotateCcw } from "lucide-react";
+import { useDemo } from "@/contexts/DemoContext";
+import { toast } from "sonner";
 
 export const Navbar = () => {
   const location = useLocation();
+  const { isDemoStarted, resetDemo } = useDemo();
   
   const isActive = (path: string) => location.pathname === path;
+  
+  const handleResetDemo = () => {
+    resetDemo();
+    toast.success("Demo reset! Start fresh from Upload page");
+    window.location.href = "/upload";
+  };
   
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to="/upload" className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center shadow-lg group-hover:shadow-glow transition-all">
               <Package className="w-6 h-6 text-primary-foreground" />
             </div>
@@ -22,9 +31,9 @@ export const Navbar = () => {
           
           <div className="hidden md:flex items-center gap-6">
             <Link
-              to="/"
+              to="/dashboard"
               className={`text-sm font-medium transition-colors hover:text-primary ${
-                isActive("/") ? "text-foreground" : "text-muted-foreground"
+                isActive("/dashboard") ? "text-foreground" : "text-muted-foreground"
               }`}
             >
               Dashboard
@@ -36,6 +45,14 @@ export const Navbar = () => {
               }`}
             >
               Upload Product
+            </Link>
+            <Link
+              to="/bom"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActive("/bom") ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              BOM
             </Link>
             <Link
               to="/sourcing"
@@ -56,6 +73,17 @@ export const Navbar = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            {isDemoStarted && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={handleResetDemo}
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="hidden sm:inline">Reset Demo</span>
+              </Button>
+            )}
             <Button size="sm" className="gap-2 shadow-md hover:shadow-lg transition-all">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">New Project</span>

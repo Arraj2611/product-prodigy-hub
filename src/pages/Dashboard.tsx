@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { RevenueChart } from "@/components/charts/RevenueChart";
 import { ProductPerformanceChart } from "@/components/charts/ProductPerformanceChart";
@@ -12,10 +13,49 @@ import {
   ArrowUpRight,
   Clock,
   CheckCircle2,
-  BarChart3
+  BarChart3,
+  Sparkles,
+  Upload
 } from "lucide-react";
+import { useDemo } from "@/contexts/DemoContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const { isDemoStarted } = useDemo();
+  const navigate = useNavigate();
+
+  // If demo not started, show welcome state
+  if (!isDemoStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center p-6">
+        <Card className="max-w-2xl w-full p-12 text-center border-border/50 bg-card/50 backdrop-blur space-y-6 animate-fade-in">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+            <Sparkles className="w-10 h-10 text-primary" />
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold">Welcome to SourceFlow</h1>
+            <p className="text-muted-foreground text-lg">
+              Your AI-powered platform for product creation and global commerce
+            </p>
+          </div>
+          <div className="pt-4 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Start by uploading a product to see the full demo experience
+            </p>
+            <Button 
+              onClick={() => navigate("/upload")}
+              size="lg"
+              className="gap-2"
+            >
+              <Upload className="w-5 h-5" />
+              Upload Your First Product
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const stats = [
     {
       title: "Active Projects",

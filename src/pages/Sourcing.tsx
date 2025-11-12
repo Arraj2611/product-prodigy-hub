@@ -13,10 +13,42 @@ import {
   Star,
   ArrowRight,
   Globe,
-  LineChart
+  LineChart,
+  Upload
 } from "lucide-react";
+import { useDemo } from "@/contexts/DemoContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Sourcing() {
+  const { isDemoStarted } = useDemo();
+  const navigate = useNavigate();
+
+  // If demo not started, show empty state
+  if (!isDemoStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center p-6">
+        <Card className="max-w-2xl w-full p-12 text-center border-border/50 bg-card/50 backdrop-blur space-y-6 animate-fade-in">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+            <Globe className="w-10 h-10 text-primary" />
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold">Global Sourcing</h1>
+            <p className="text-muted-foreground text-lg">
+              No sourcing data available. Upload a product to discover suppliers.
+            </p>
+          </div>
+          <Button 
+            onClick={() => navigate("/upload")}
+            size="lg"
+            className="gap-2"
+          >
+            <Upload className="w-5 h-5" />
+            Upload Product
+          </Button>
+        </Card>
+      </div>
+    );
+  }
   // Supplier locations for map
   const supplierLocations = [
     { name: "Kaihara Mills", coordinates: [132.4553, 34.3853] as [number, number], city: "Hiroshima", country: "Japan", type: "supplier" as const, details: "14oz Selvedge Denim", value: "$8.50/m" },
