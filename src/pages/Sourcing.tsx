@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PriceTrendChart } from "@/components/charts/PriceTrendChart";
+import { WorldMap } from "@/components/WorldMap";
 import { 
   MapPin, 
   TrendingUp, 
@@ -16,6 +17,24 @@ import {
 } from "lucide-react";
 
 export default function Sourcing() {
+  // Supplier locations for map
+  const supplierLocations = [
+    { name: "Kaihara Mills", coordinates: [132.4553, 34.3853] as [number, number], city: "Hiroshima", country: "Japan", type: "supplier" as const, details: "14oz Selvedge Denim", value: "$8.50/m" },
+    { name: "Kurabo Industries", coordinates: [133.9350, 34.6551] as [number, number], city: "Okayama", country: "Japan", type: "supplier" as const, details: "14oz Selvedge Denim", value: "$8.20/m" },
+    { name: "Cone Denim", coordinates: [-80.8431, 35.2271] as [number, number], city: "North Carolina", country: "USA", type: "supplier" as const, details: "14oz Selvedge Denim", value: "$9.00/m" },
+    { name: "Tuscany Hardware Co.", coordinates: [11.2558, 43.7696] as [number, number], city: "Florence", country: "Italy", type: "supplier" as const, details: "Copper Rivets", value: "$0.15/pc" },
+    { name: "Milano Metallics", coordinates: [9.1900, 45.4642] as [number, number], city: "Milan", country: "Italy", type: "supplier" as const, details: "Copper Rivets", value: "$0.13/pc" },
+  ];
+
+  // Market locations for map
+  const marketLocations = [
+    { name: "New York Market", coordinates: [-74.0060, 40.7128] as [number, number], city: "New York", country: "United States", type: "market" as const, details: "High Demand", value: "$185 avg" },
+    { name: "London Market", coordinates: [-0.1276, 51.5074] as [number, number], city: "London", country: "United Kingdom", type: "market" as const, details: "Very High Demand", value: "$165 avg" },
+    { name: "Tokyo Market", coordinates: [139.6917, 35.6895] as [number, number], city: "Tokyo", country: "Japan", type: "market" as const, details: "High Demand", value: "$220 avg" },
+    { name: "Berlin Market", coordinates: [13.4050, 52.5200] as [number, number], city: "Berlin", country: "Germany", type: "market" as const, details: "Medium Demand", value: "$155 avg" },
+    { name: "Sydney Market", coordinates: [151.2093, -33.8688] as [number, number], city: "Sydney", country: "Australia", type: "market" as const, details: "High Demand", value: "$175 avg" },
+  ];
+
   const suppliers = [
     {
       material: "14oz Selvedge Denim",
@@ -156,6 +175,22 @@ export default function Sourcing() {
 
           {/* Suppliers Tab */}
           <TabsContent value="suppliers" className="space-y-6">
+            {/* Interactive World Map */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Globe className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Global Supplier Network</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Interactive map of verified suppliers worldwide
+                  </p>
+                </div>
+              </div>
+              <WorldMap locations={supplierLocations} height={450} />
+            </div>
+
             {suppliers.map((category, catIndex) => (
               <Card key={catIndex} className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
                 <div className="p-6 bg-muted/30 border-b border-border/50">
@@ -315,6 +350,22 @@ export default function Sourcing() {
 
           {/* Markets Tab */}
           <TabsContent value="markets" className="space-y-6">
+            {/* Market Intelligence Map */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+                  <Globe className="w-6 h-6 text-success" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Global Market Opportunities</h2>
+                  <p className="text-sm text-muted-foreground">
+                    AI-predicted demand hotspots across 23 countries
+                  </p>
+                </div>
+              </div>
+              <WorldMap locations={marketLocations} height={450} />
+            </div>
+
             <Card className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
               <div className="p-6 bg-muted/30 border-b border-border/50">
                 <h2 className="text-xl font-bold">Optimal Selling Markets</h2>
