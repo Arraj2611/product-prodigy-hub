@@ -2,130 +2,49 @@
 
 An intelligent platform that transforms product ideas into actionable manufacturing plans. Upload product images, and SourceFlow automatically generates Bills of Materials (BOMs), finds suppliers, analyzes markets, and creates marketing campaigns.
 
-## 🚀 Quick Start
+## 🚀 Getting Started
+
+**New to SourceFlow?** 👉 **[Start here: Complete Setup Guide](NEW_USER_STEPS.md)**
+
+This guide walks you through everything step-by-step, from installing prerequisites to running your first product analysis.
+
+## ⚡ Quick Start
 
 ### Prerequisites
-
-Before you begin, make sure you have:
 
 - **Node.js 20+** - [Download](https://nodejs.org/)
 - **Python 3.11+** - [Download](https://www.python.org/downloads/)
 - **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop/)
-- **Groq API Key** (Free) - [Get it here](https://console.groq.com/keys) (takes 2 minutes)
+- **Groq API Key** (Free) - [Get it here](https://console.groq.com/keys)
 
-### Installation (One-Time Setup)
-
-#### Step 1: Get Your Groq API Key
-
-1. Visit [Groq Console](https://console.groq.com/keys)
-2. Sign in or create a free account
-3. Click "Create API Key"
-4. Copy the key (you'll need it in Step 3)
-
-#### Step 2: Install Dependencies
-
-Open a terminal in the project folder and run:
-
-**Windows:**
-
-```bash
-# Install frontend dependencies
-npm install
-
-# Install backend dependencies
-cd backend
-npm install
-cd ..
-
-# Install AI service dependencies
-cd ai-service
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-cd ..
-```
-
-**macOS/Linux:**
-
-```bash
-# Install frontend dependencies
-npm install
-
-# Install backend dependencies
-cd backend
-npm install
-cd ..
-
-# Install AI service dependencies
-cd ai-service
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-cd ..
-```
-
-#### Step 3: Configure Environment
-
-The startup scripts will automatically create `.env` files if they don't exist, but you **must** add your Groq API key:
-
-1. Open `ai-service/.env` in a text editor
-2. Replace `your-groq-api-key-here` with your actual API key from Step 1
-3. Save the file
+> 📖 **For detailed installation instructions, see [NEW_USER_STEPS.md](NEW_USER_STEPS.md)**
 
 ### Running the Application
 
-#### Option 1: Automated Scripts (Recommended)
+**Recommended: Use the automated startup scripts**
 
 **Windows:**
-
 ```bash
 start-local.bat
 ```
 
 **macOS/Linux:**
-
 ```bash
 chmod +x start-local.sh
 ./start-local.sh
 ```
 
-The scripts will:
-
-- ✅ Check all prerequisites
+The scripts automatically:
+- ✅ Check prerequisites
+- ✅ Create environment files
 - ✅ Start Docker containers (PostgreSQL & Redis)
 - ✅ Set up the database
-- ✅ Start all three services (Backend, AI Service, Frontend)
+- ✅ Install dependencies (if needed)
+- ✅ Start all services
 
-**Note:** On Windows, the script opens 3 separate command windows - one for each service. Keep them open while using the app.
+> 📖 **For detailed setup instructions and troubleshooting, see [NEW_USER_STEPS.md](NEW_USER_STEPS.md)**
 
-#### Option 2: Manual Start (3 Terminal Windows)
-
-If you prefer to start services manually:
-
-**Terminal 1 - Backend:**
-
-```bash
-cd backend
-docker-compose up -d postgres redis
-npm run db:generate
-npm run db:migrate
-npm run dev
-```
-
-**Terminal 2 - AI Service:**
-
-```bash
-cd ai-service
-# Windows: venv\Scripts\activate
-# macOS/Linux: source venv/bin/activate
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-**Terminal 3 - Frontend:**
-
-```bash
-npm run dev
-```
+**Manual Start:** See [NEW_USER_STEPS.md](NEW_USER_STEPS.md) for manual service startup instructions.
 
 ### Access the Application
 
@@ -136,6 +55,8 @@ Once all services are running:
 - **AI Service:** <http://localhost:8000>
 
 ## 📖 First Steps
+
+Once the application is running:
 
 1. **Open the app:** Navigate to <http://localhost:8080> in your browser
 2. **Create an account:** Click "Sign In" → "Sign Up" → Enter your details
@@ -150,6 +71,8 @@ Once all services are running:
    - **Markets Tab:** Check market demand forecasts
    - **Marketing Tab:** Get campaign suggestions
    - **Dashboard:** View analytics and charts
+
+> 📖 **For detailed first-time usage guide, see [NEW_USER_STEPS.md](NEW_USER_STEPS.md)**
 
 ## 🏗️ Project Structure
 
@@ -186,98 +109,18 @@ product-prodigy-hub/
 
 ## 🔧 Troubleshooting
 
-### Database Connection Issues
+> 📖 **For comprehensive troubleshooting guide with solutions to common issues, see [NEW_USER_STEPS.md](NEW_USER_STEPS.md#-troubleshooting)**
 
-**Problem:** "Cannot connect to database" or "Authentication failed"
+**Quick fixes:**
 
-**Solution:**
-
-```bash
-cd backend
-docker-compose down
-docker-compose up -d postgres redis
-# Wait 5 seconds, then:
-npm run db:generate
-npm run db:migrate
-```
-
-### AI Service Not Starting
-
-**Problem:** "GROQ_API_KEY not set" or "Module not found"
-
-**Solution:**
-
-1. Verify `ai-service/.env` exists and contains your Groq API key
-2. Make sure you activated the virtual environment:
-
-   ```bash
-   cd ai-service
-   # Windows: venv\Scripts\activate
-   # macOS/Linux: source venv/bin/activate
-   ```
-
-3. Reinstall dependencies if needed:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-### Frontend Can't Connect to Backend
-
-**Problem:** CORS errors or "Failed to fetch"
-
-**Solution:**
-
-1. Verify backend is running on port 3000
-2. Check `backend/.env` has: `CORS_ORIGIN=http://localhost:8080`
-3. Restart the backend server
-
-### Port Already in Use
-
-**Problem:** "EADDRINUSE: address already in use"
-
-**Solution:**
-
-**Windows:**
-
-```bash
-# Find process using port 3000
-netstat -ano | findstr :3000
-# Kill the process (replace <PID> with actual number)
-taskkill /PID <PID> /F
-```
-
-**macOS/Linux:**
-
-```bash
-# Find and kill process using port 3000
-lsof -ti:3000 | xargs kill -9
-```
-
-### Docker Containers Not Starting
-
-**Problem:** Docker errors or containers won't start
-
-**Solution:**
-
-1. Make sure Docker Desktop is running
-2. Check Docker has enough resources (Settings → Resources)
-3. Try restarting Docker Desktop
-4. Check if port 5433 is available (PostgreSQL uses this port)
-
-### Services Start But App Doesn't Work
-
-**Check service health:**
-
-```bash
-# Backend health check
-curl http://localhost:3000/health
-
-# AI service health check
-curl http://localhost:8000/health
-```
-
-Both should return `{"status":"ok"}`. If not, check the terminal logs for errors.
+- **Database issues:** `cd backend && docker-compose down && docker-compose up -d postgres redis`
+- **API key not set:** Add your Groq API key to `ai-service/.env`
+- **Port conflicts:** See [NEW_USER_STEPS.md](NEW_USER_STEPS.md#problem-port-already-in-use)
+- **Service health checks:**
+  ```bash
+  curl http://localhost:3000/health  # Backend
+  curl http://localhost:8000/health  # AI Service
+  ```
 
 ## 📚 Development
 
@@ -320,21 +163,13 @@ All services support automatic reloading:
 
 ## 🆘 Getting Help
 
-1. **Check service logs:**
-   - Backend: Check the terminal where `npm run dev` is running
-   - AI Service: Check the terminal where `uvicorn` is running
-   - Frontend: Check browser console (F12)
-
-2. **Verify all services are running:**
+1. **First-time setup?** Check [NEW_USER_STEPS.md](NEW_USER_STEPS.md) for detailed instructions
+2. **Having issues?** See the [Troubleshooting section](NEW_USER_STEPS.md#-troubleshooting) in NEW_USER_STEPS.md
+3. **Verify services:**
    - Backend: <http://localhost:3000/health>
    - AI Service: <http://localhost:8000/health>
    - Frontend: <http://localhost:8080>
-
-3. **Common issues:**
-   - Make sure Docker Desktop is running
-   - Verify all `.env` files are configured
-   - Check that ports 3000, 8000, 8080, 5433, and 6379 are available
-   - Ensure Groq API key is valid
+4. **Check logs:** Review terminal output where services are running
 
 ## 📝 License
 
