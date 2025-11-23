@@ -20,6 +20,19 @@ const prisma = new PrismaClient({
 // Graceful shutdown
 process.on('beforeExit', async () => {
   await prisma.$disconnect();
+  await pool.end();
+});
+
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  await pool.end();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await prisma.$disconnect();
+  await pool.end();
+  process.exit(0);
 });
 
 export default prisma;

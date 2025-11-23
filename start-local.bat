@@ -68,6 +68,15 @@ if not exist "ai-service\.env" (
     pause
 )
 
+REM Validate Groq API key
+findstr /C:"your-groq-api-key-here" ai-service\.env >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ❌ GROQ_API_KEY not set in ai-service\.env
+    echo    Please add your API key before continuing
+    pause
+    exit /b 1
+)
+
 echo.
 
 REM Start Docker services
@@ -79,6 +88,15 @@ cd ..
 REM Wait for database
 echo ⏳ Waiting for database to be ready...
 timeout /t 5 /nobreak >nul
+
+REM Check if database is ready
+:wait_db
+docker exec sourceflow-postgres pg_isready -U sourceflow_user >nul 2>&1
+if %errorlevel% neq 0 (
+    echo    Waiting for PostgreSQL...
+    timeout /t 2 /nobreak >nul
+    goto wait_db
+)
 
 echo ✅ Database is ready
 echo.
@@ -125,6 +143,12 @@ echo.
 
 REM Create logs directory
 if not exist "logs" mkdir logs
+
+REM Check frontend dependencies
+if not exist "node_modules" (
+    echo    Installing frontend dependencies...
+    call npm install
+)
 
 REM Start services in separate windows
 echo 🎯 Starting services...
