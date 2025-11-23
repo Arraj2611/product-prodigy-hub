@@ -8,12 +8,14 @@ export interface TokenPayload {
 }
 
 export const generateAccessToken = (payload: TokenPayload): string => {
+  // @ts-ignore - JWT_EXPIRES_IN is a valid string format (e.g., '7d') but types are strict
   return jwt.sign(payload, config.JWT_SECRET, {
     expiresIn: config.JWT_EXPIRES_IN,
   });
 };
 
 export const generateRefreshToken = (payload: TokenPayload): string => {
+  // @ts-ignore - JWT_REFRESH_EXPIRES_IN is a valid string format (e.g., '30d') but types are strict
   return jwt.sign(payload, config.JWT_REFRESH_SECRET, {
     expiresIn: config.JWT_REFRESH_EXPIRES_IN,
   });

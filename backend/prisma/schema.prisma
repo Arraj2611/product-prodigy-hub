@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
@@ -60,20 +59,21 @@ enum CertificationType {
 
 // User Management
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
+  id            String   @id @default(uuid())
+  email         String   @unique
   passwordHash  String?
   name          String?
-  role          UserRole  @default(CREATOR)
-  emailVerified Boolean   @default(false)
+  role          UserRole @default(CREATOR)
+  emailVerified Boolean  @default(false)
   avatar        String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   products      Product[]
   sessions      Session[]
   auditLogs     AuditLog[]
+  notifications Notification[]
 
   @@index([email])
   @@index([role])
@@ -104,24 +104,26 @@ model Product {
   updatedAt   DateTime      @updatedAt
 
   // Relations
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assets      ProductAsset[]
-  boms        BOM[]
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assets          ProductAsset[]
+  boms            BOM[]
+  marketForecasts MarketDemandForecast[]
+  priceForecasts  MaterialPriceForecast[]
 
   @@index([userId])
   @@index([status])
 }
 
 model ProductAsset {
-  id          String   @id @default(uuid())
-  productId   String
-  type        String   // 'image' | 'video'
-  url         String
-  storageKey  String
-  metadata    Json?    // Color, texture, fabrication tags
-  size        Int?     // File size in bytes
-  mimeType    String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  productId  String
+  type       String // 'image' | 'video'
+  url        String
+  storageKey String
+  metadata   Json? // Color, texture, fabrication tags
+  size       Int? // File size in bytes
+  mimeType   String?
+  createdAt  DateTime @default(now())
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -130,22 +132,24 @@ model ProductAsset {
 
 // BOM Management
 model BOM {
-  id              String    @id @default(uuid())
-  productId       String
-  status          BOMStatus @default(DRAFT)
-  confidence      Float?    // AI confidence score (0-1)
-  totalCost       Decimal?  @precision(10, 2)
-  yieldBuffer     Float     @default(10.0) // Percentage
-  version         Int       @default(1)
-  lockedAt        DateTime?
-  verifiedBy      String?   // User ID who verified
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String    @id @default(uuid())
+  productId   String
+  status      BOMStatus @default(DRAFT)
+  confidence  Float? // AI confidence score (0-1)
+  totalCost   Decimal?  @db.Decimal(10, 2)
+  yieldBuffer Float     @default(10.0) // Percentage
+  version     Int       @default(1)
+  lockedAt    DateTime?
+  verifiedBy  String? // User ID who verified
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product         Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
   items           BOMItem[]
   versions        BOMVersion[]
+  marketForecasts MarketDemandForecast[]
+  priceForecasts  MaterialPriceForecast[]
 
   @@index([productId])
   @@index([status])
@@ -155,7 +159,7 @@ model BOMVersion {
   id        String   @id @default(uuid())
   bomId     String
   version   Int
-  data      Json     // Snapshot of BOM data
+  data      Json // Snapshot of BOM data
   createdAt DateTime @default(now())
 
   bom BOM @relation(fields: [bomId], references: [id], onDelete: Cascade)
@@ -165,19 +169,19 @@ model BOMVersion {
 }
 
 model BOMItem {
-  id            String      @id @default(uuid())
-  bomId         String
-  category      String      // Shell Fabrication, Trims & Hardware, etc.
-  name          String
-  type          MaterialType
-  quantity      Decimal     @precision(10, 3)
-  unit          String      // meter, piece, kg, etc.
-  unitCost      Decimal?    @precision(10, 2)
-  totalCost     Decimal?    @precision(10, 2)
-  specifications Json?      // Material specs
-  source        String?     // Country/region
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id             String       @id @default(uuid())
+  bomId          String
+  category       String // Shell Fabrication, Trims & Hardware, etc.
+  name           String
+  type           MaterialType
+  quantity       Decimal      @db.Decimal(10, 3)
+  unit           String // meter, piece, kg, etc.
+  unitCost       Decimal?     @db.Decimal(10, 2)
+  totalCost      Decimal?     @db.Decimal(10, 2)
+  specifications Json? // Material specs
+  source         String? // Country/region
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   bom BOM @relation(fields: [bomId], references: [id], onDelete: Cascade)
 
@@ -187,13 +191,13 @@ model BOMItem {
 
 // Material Catalog
 model Material {
-  id            String      @id @default(uuid())
-  name          String
-  type          MaterialType
-  description   String?
-  specifications Json?      // Standard specs
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id             String       @id @default(uuid())
+  name           String
+  type           MaterialType
+  description    String?
+  specifications Json? // Standard specs
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   supplierMaterials SupplierMaterial[]
 
@@ -203,25 +207,25 @@ model Material {
 
 // Supplier Management
 model Supplier {
-  id              String         @id @default(uuid())
-  name            String
-  location        String         // City, Country
-  country         String
-  city            String
-  coordinates     Json?         // [longitude, latitude]
-  status          SupplierStatus @default(PENDING_VERIFICATION)
-  rating          Float?          @default(0) // 0-5
-  reliability     Float?          @default(0) // 0-100
-  riskIndex       Float?          @default(0) // 0-100
-  website         String?
-  contactEmail    String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id           String         @id @default(uuid())
+  name         String
+  location     String // City, Country
+  country      String
+  city         String
+  coordinates  Json? // [longitude, latitude]
+  status       SupplierStatus @default(PENDING_VERIFICATION)
+  rating       Float?         @default(0) // 0-5
+  reliability  Float?         @default(0) // 0-100
+  riskIndex    Float?         @default(0) // 0-100
+  website      String?
+  contactEmail String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   // Relations
-  materials       SupplierMaterial[]
-  certifications  SupplierCertification[]
-  priceHistory    CommodityPrice[]
+  materials      SupplierMaterial[]
+  certifications SupplierCertification[]
+  priceHistory   CommodityPrice[]
 
   @@index([country])
   @@index([status])
@@ -229,19 +233,19 @@ model Supplier {
 }
 
 model SupplierMaterial {
-  id              String   @id @default(uuid())
-  supplierId      String
-  materialId      String?
-  materialName    String   // Denormalized for flexibility
-  unitPrice       Decimal  @precision(10, 2)
-  unit            String   // meter, piece, kg, etc.
-  moq             String?  // Minimum Order Quantity
-  leadTime        String?  // e.g., "45 days"
-  availability    Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(uuid())
+  supplierId   String
+  materialId   String?
+  materialName String // Denormalized for flexibility
+  unitPrice    Decimal  @db.Decimal(10, 2)
+  unit         String // meter, piece, kg, etc.
+  moq          String? // Minimum Order Quantity
+  leadTime     String? // e.g., "45 days"
+  availability Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplier Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   material Material? @relation(fields: [materialId], references: [id], onDelete: SetNull)
 
   @@index([supplierId])
@@ -249,17 +253,17 @@ model SupplierMaterial {
 }
 
 model SupplierCertification {
-  id              String           @id @default(uuid())
-  supplierId      String
-  type            CertificationType
-  certificateId   String?
-  issuedBy        String?
-  issuedDate      DateTime?
-  expiryDate      DateTime?
-  verified        Boolean          @default(false)
-  verifiedAt      DateTime?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime        @updatedAt
+  id            String            @id @default(uuid())
+  supplierId    String
+  type          CertificationType
+  certificateId String?
+  issuedBy      String?
+  issuedDate    DateTime?
+  expiryDate    DateTime?
+  verified      Boolean           @default(false)
+  verifiedAt    DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
@@ -270,16 +274,16 @@ model SupplierCertification {
 
 // Commodity Pricing
 model CommodityPrice {
-  id            String   @id @default(uuid())
-  commodity     String   // e.g., "Cotton", "Polyester"
-  supplierId    String?
-  unitPrice     Decimal  @precision(10, 4)
-  unit          String   // per meter, kg, etc.
-  currency      String   @default("USD")
-  source        String   // API source name
-  date          DateTime
-  volatility    Float?   // Price volatility percentage
-  createdAt     DateTime @default(now())
+  id         String   @id @default(uuid())
+  commodity  String // e.g., "Cotton", "Polyester"
+  supplierId String?
+  unitPrice  Decimal  @db.Decimal(10, 4)
+  unit       String // per meter, kg, etc.
+  currency   String   @default("USD")
+  source     String // API source name
+  date       DateTime
+  volatility Float? // Price volatility percentage
+  createdAt  DateTime @default(now())
 
   supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
@@ -288,17 +292,68 @@ model CommodityPrice {
   @@index([supplierId])
 }
 
+// Market Demand Forecasts (AI-generated)
+model MarketDemandForecast {
+  id            String   @id @default(uuid())
+  productId     String
+  bomId         String?
+  country       String
+  city          String?
+  demand        Float // 0-100 score
+  competition   Float // 0-100 score
+  price         Float // 0-100 score
+  growth        Float // 0-100 score
+  marketSize    String? // e.g., "$2.4B"
+  avgPrice      String? // e.g., "$185"
+  growthPercent String? // e.g., "+12%"
+  trend         String? // "up", "down", "stable"
+  forecastDate  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  bom     BOM?     @relation(fields: [bomId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([bomId])
+  @@index([country])
+  @@index([forecastDate])
+}
+
+// Material Price Forecasts (AI-generated)
+model MaterialPriceForecast {
+  id           String   @id @default(uuid())
+  productId    String
+  bomId        String?
+  materialName String // e.g., "Cotton", "Denim", "Hardware"
+  unit         String // e.g., "meter", "kg"
+  week         Int // Week number (1-52)
+  price        Decimal  @db.Decimal(10, 4)
+  currency     String   @default("USD")
+  forecastDate DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  bom     BOM?     @relation(fields: [bomId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([bomId])
+  @@index([materialName])
+  @@index([week])
+}
+
 // Audit Logs (7-year retention requirement)
 model AuditLog {
-  id          String   @id @default(uuid())
-  userId      String?
-  action      String   // e.g., "BOM_CREATED", "SUPPLIER_SELECTED"
-  entityType  String   // e.g., "BOM", "SUPPLIER"
-  entityId    String?
-  details     Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String // e.g., "BOM_CREATED", "SUPPLIER_SELECTED"
+  entityType String // e.g., "BOM", "SUPPLIER"
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -308,3 +363,31 @@ model AuditLog {
   @@index([createdAt])
 }
 
+// Notifications
+enum NotificationType {
+  BOM_GENERATED
+  SUPPLIERS_FOUND
+  MARKET_FORECAST_READY
+  PRICE_FORECAST_READY
+  PRODUCT_UPDATED
+  SYSTEM_ALERT
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  metadata  Json? // Additional data (productId, bomId, etc.)
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@index([type])
+}

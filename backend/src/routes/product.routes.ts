@@ -87,6 +87,9 @@ router.get(
         boms: {
           orderBy: { createdAt: 'desc' },
           take: 1,
+          include: {
+            items: true, // Include BOM items for cost calculations
+          },
         },
       },
     });
@@ -150,15 +153,41 @@ router.delete(
         id: productId,
         userId,
       },
+      include: {
+        assets: true, // Include assets to delete files from storage
+      },
     });
 
     if (!product) {
       throw new AppError('Product not found', 404);
     }
 
+    // Delete all asset files from storage before deleting the product
+    // (Database records will be cascade deleted automatically)
+    const { deleteFile } = await import('../services/storage.service.js');
+    const logger = (await import('../utils/logger.js')).default;
+    
+    for (const asset of product.assets) {
+      try {
+        await deleteFile(asset.storageKey);
+        logger.info(`Deleted asset file: ${asset.storageKey}`);
+      } catch (error) {
+        // Log warning but continue deletion
+        logger.warn(`Failed to delete asset file ${asset.storageKey}: ${error}`);
+      }
+    }
+
+    // Delete product (cascade delete will handle all related records)
+    // This will automatically delete:
+    // - ProductAsset records (already handled files above)
+    // - BOM records and their BOMItem, BOMVersion records
+    // - MarketDemandForecast records
+    // - MaterialPriceForecast records
     await prisma.product.delete({
       where: { id: productId },
     });
+
+    logger.info(`Deleted product ${productId} and all related data`);
 
     res.json({
       success: true,

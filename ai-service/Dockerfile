@@ -1,5 +1,5 @@
 # Python AI Service Dockerfile
-# Uses Google Gemini API (free tier) - no heavy ML dependencies needed
+# Uses Groq API (free tier) - no heavy ML dependencies needed
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -21,6 +21,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
 # Run application
-# Note: GEMINI_API_KEY must be provided via environment variable
+# Note: GROQ_API_KEY must be provided via environment variable
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

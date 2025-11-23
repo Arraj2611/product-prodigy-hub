@@ -14,7 +14,7 @@ class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
-  ): Promise<T> {
+  ): Promise<T & { status?: number }> {
     const token = localStorage.getItem('accessToken');
     
     const headers: HeadersInit = {
@@ -32,13 +32,33 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        error: response.statusText,
-      }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+      // Handle 401 Unauthorized - clear tokens
+      if (response.status === 401) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.dispatchEvent(new CustomEvent('auth:required'));
+      }
+      
+      // Try to parse error response, fallback to status text
+      let errorData;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          errorData = { error: response.statusText };
+        }
+      } catch {
+        errorData = { error: response.statusText };
+      }
+      
+      const errorMessage = errorData?.error || errorData?.message || `HTTP ${response.status}`;
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    const data = await response.json();
+    // Include status code in response for handling 202 vs 201
+    return { ...data, status: response.status } as T & { status: number };
   }
 
   async get<T>(endpoint: string): Promise<T> {
@@ -78,10 +98,28 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        error: response.statusText,
-      }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+      // Handle 401 Unauthorized - clear tokens
+      if (response.status === 401) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.dispatchEvent(new CustomEvent('auth:required'));
+      }
+      
+      // Try to parse error response, fallback to status text
+      let errorData;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          errorData = { error: response.statusText };
+        }
+      } catch {
+        errorData = { error: response.statusText };
+      }
+      
+      const errorMessage = errorData?.error || errorData?.message || `HTTP ${response.status}`;
+      throw new Error(errorMessage);
     }
 
     return response.json();

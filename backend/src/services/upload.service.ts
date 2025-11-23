@@ -11,7 +11,7 @@ import logger from '../utils/logger.js';
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
 
-const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   // Allow images and videos
   const allowedMimes = [
     'image/jpeg',
@@ -56,7 +56,7 @@ export const processAndUploadAsset = async (
     const fileExtension = path.extname(file.originalname);
     const fileId = uuidv4();
     const isImage = file.mimetype.startsWith('image/');
-    const isVideo = file.mimetype.startsWith('video/');
+    // const isVideo = file.mimetype.startsWith('video/'); // Reserved for future video processing
 
     let processedBuffer: Buffer = file.buffer;
     let finalMimeType = file.mimetype;

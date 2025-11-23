@@ -4,6 +4,8 @@ import prisma from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
 import logger from '../utils/logger.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// @ts-ignore - Reserved for future FRED API integration
 interface FREDSeries {
   id: string;
   title: string;
@@ -116,7 +118,7 @@ export class CommodityService {
       throw new Error(`FRED API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const observations = data.observations || [];
 
     if (observations.length === 0) {
@@ -164,7 +166,7 @@ export class CommodityService {
         return 0;
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       const observations = data.observations || [];
 
       if (observations.length < 2) {

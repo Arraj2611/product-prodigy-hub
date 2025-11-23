@@ -1,5 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import fs from 'fs/promises';
+import path from 'path';
 import { config } from '../config/index.js';
 import logger from '../utils/logger.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -45,6 +47,25 @@ export const uploadFile = async (
   options: UploadOptions
 ): Promise<string> => {
   try {
+    // Local file storage for development
+    if (config.STORAGE_TYPE === 'local') {
+      const storagePath = path.resolve(config.STORAGE_LOCAL_PATH || './uploads');
+      const filePath = path.join(storagePath, options.key);
+      const dirPath = path.dirname(filePath);
+
+      // Ensure directory exists
+      await fs.mkdir(dirPath, { recursive: true });
+
+      // Write file
+      await fs.writeFile(filePath, buffer);
+
+      // Return local URL (will be served by Express static middleware)
+      // Use full URL for external access
+      const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+      return `${baseUrl}/uploads/${options.key}`;
+    }
+
+    // Cloud storage (S3/R2)
     const s3Client = getS3Client();
     const bucketName = getBucketName();
 
@@ -78,6 +99,12 @@ export const uploadFile = async (
 
 export const getFileUrl = async (key: string, expiresIn: number = 3600): Promise<string> => {
   try {
+    // Local file storage
+    if (config.STORAGE_TYPE === 'local') {
+      return `/uploads/${key}`;
+    }
+
+    // Cloud storage (S3/R2)
     const s3Client = getS3Client();
     const bucketName = getBucketName();
 
@@ -95,6 +122,17 @@ export const getFileUrl = async (key: string, expiresIn: number = 3600): Promise
 
 export const deleteFile = async (key: string): Promise<void> => {
   try {
+    // Local file storage
+    if (config.STORAGE_TYPE === 'local') {
+      const storagePath = path.resolve(config.STORAGE_LOCAL_PATH || './uploads');
+      const filePath = path.join(storagePath, key);
+      await fs.unlink(filePath).catch(() => {
+        // File might not exist, ignore error
+      });
+      return;
+    }
+
+    // Cloud storage (S3/R2)
     const s3Client = getS3Client();
     const bucketName = getBucketName();
 

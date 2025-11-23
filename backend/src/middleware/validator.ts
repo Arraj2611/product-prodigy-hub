@@ -11,9 +11,10 @@ export const validate = (schema: ZodSchema) => {
         params: req.params,
       });
       next();
+      return;
     } catch (error) {
       if (error instanceof ZodError) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: 'Validation Error',
           details: error.errors.map((e) => ({
@@ -21,8 +22,10 @@ export const validate = (schema: ZodSchema) => {
             message: e.message,
           })),
         });
+        return;
       }
       next(error);
+      return;
     }
   });
 };

@@ -1,13 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
-
-const roiData = [
-  { platform: "Instagram", roi: 185, spent: 1840, conversions: 234 },
-  { platform: "Facebook", roi: 142, spent: 1120, conversions: 156 },
-  { platform: "Twitter", roi: 98, spent: 450, conversions: 89 },
-  { platform: "TikTok", roi: 220, spent: 2100, conversions: 312 },
-  { platform: "YouTube", roi: 165, spent: 1650, conversions: 198 },
-];
+import { useQuery } from "@tanstack/react-query";
+import { marketingApi } from "@/services/api/marketing.api";
+import { productApi } from "@/services/api/product.api";
+import { Loader2 } from "lucide-react";
 
 const COLORS = [
   "hsl(var(--primary))",
@@ -18,6 +14,74 @@ const COLORS = [
 ];
 
 export const CampaignROIChart = () => {
+  // Get first product for campaigns
+  const { data: productsData } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => productApi.getProducts(),
+  });
+
+  const firstProduct = productsData?.data?.products?.[0];
+
+  const { data: campaignsData, isLoading } = useQuery({
+    queryKey: ['marketing-campaigns', firstProduct?.id],
+    queryFn: () => marketingApi.getCampaigns(firstProduct!.id),
+    enabled: !!firstProduct?.id,
+  });
+
+  const campaigns = campaignsData?.data?.campaigns || [];
+
+  // Transform campaign data for chart
+  const roiData = campaigns.map(campaign => {
+    // Parse ROI percentage (e.g., "320%" -> 320)
+    const roi = parseFloat(campaign.roi.replace('%', '')) || 0;
+    // Parse budget (e.g., "$5,000" -> 5000)
+    const spent = parseFloat(campaign.budget.replace(/[$,]/g, '')) || 0;
+    // Parse reach (e.g., "50K" -> 50000)
+    const reachStr = campaign.reach.replace(/[Kk]/g, '000').replace(/[Mm]/g, '000000');
+    const reach = parseFloat(reachStr.replace(/[^0-9.]/g, '')) || 0;
+    // Estimate conversions from engagement rate
+    const engagementRate = parseFloat(campaign.engagement.replace('%', '')) || 0;
+    const conversions = Math.round(reach * (engagementRate / 100) * 0.1); // 10% of engaged users convert
+    
+    return {
+      platform: campaign.platform,
+      roi,
+      spent,
+      conversions,
+    };
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="p-6 border-border/50 bg-card/50 backdrop-blur">
+        <div className="mb-6">
+          <h3 className="text-xl font-bold">Campaign ROI Analysis</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Loading ROI data...
+          </p>
+        </div>
+        <div className="h-[300px] flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (roiData.length === 0) {
+    return (
+      <Card className="p-6 border-border/50 bg-card/50 backdrop-blur">
+        <div className="mb-6">
+          <h3 className="text-xl font-bold">Campaign ROI Analysis</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            No campaign data available. Generate campaigns to see ROI analysis.
+          </p>
+        </div>
+        <div className="h-[300px] flex items-center justify-center">
+          <p className="text-muted-foreground">No data available</p>
+        </div>
+      </Card>
+    );
+  }
   return (
     <Card className="p-6 border-border/50 bg-card/50 backdrop-blur">
       <div className="mb-6">

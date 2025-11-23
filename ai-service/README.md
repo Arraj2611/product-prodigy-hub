@@ -1,22 +1,27 @@
 # SourceFlow AI Service
 
-Python FastAPI service for AI-powered BOM generation using **Google Gemini API (Free Tier)**.
+Python FastAPI service for AI-powered BOM generation using **Groq API (Free Tier)**.
 
 ## Features
 
-- **Google Gemini 2.0 Flash-Lite** for multimodal analysis (images + text)
-- **Free Tier**: 30 requests per minute, 1M tokens per month, 1.5K requests per day
+- **Groq Vision Models** for multimodal analysis (images + text)
+  - Vision: `meta-llama/llama-4-scout-17b-16e-instruct` (750 tps, supports images, JSON mode)
+  - Text: `llama-3.3-70b-versatile` (280 tps, production model for forecasts)
+- **Free Tier**: Generous rate limits (250K-300K TPM, 1K RPM)
 - Material classification from product images
 - Dimensional analysis and quantity calculation
 - Multi-level BOM generation
+- Market demand forecasting
+- Material price forecasting
+- Supplier recommendations
 - Target: <5 seconds processing time
 
 ## Setup
 
-### 1. Get Gemini API Key (Free)
+### 1. Get Groq API Key (Free)
 
-1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Sign in with your Google account
+1. Visit [Groq Console](https://console.groq.com/keys)
+2. Sign in with your account
 3. Click "Create API Key"
 4. Copy your API key
 
@@ -34,10 +39,10 @@ Create a `.env` file:
 cp .env.example .env
 ```
 
-Edit `.env` and add your Gemini API key:
+Edit `.env` and add your Groq API key:
 
 ```
-GEMINI_API_KEY=your-api-key-here
+GROQ_API_KEY=your-api-key-here
 CORS_ORIGINS=http://localhost:3000,http://localhost:8080
 ```
 
@@ -70,15 +75,19 @@ curl -X POST "http://localhost:8000/api/v1/ai/generate-bom" \
   -F "yield_buffer=10.0"
 ```
 
-## Free Tier Limits
+## Free Tier Models & Limits
 
-- **Model**: `gemini-2.0-flash-lite`
-- **Rate Limits**:
-  - 30 requests per minute (RPM)
-  - 1,000,000 tokens per month (TPM)
-  - 1,500 requests per day (RPD)
+- **Vision Model**: `meta-llama/llama-4-scout-17b-16e-instruct`
+  - Speed: ~750 tokens/second
+  - Supports: Images, JSON mode, tool use
+  - Rate Limits: 300K TPM, 1K RPM
+  
+- **Text Model**: `llama-3.3-70b-versatile`
+  - Speed: ~280 tokens/second
+  - Production model for high-quality text generation
+  - Rate Limits: 300K TPM, 1K RPM
 
-The service automatically uses the free tier model. No credit card required!
+The service automatically uses free tier models. No credit card required!
 
 ## Docker
 
@@ -92,31 +101,34 @@ docker run -p 8000:8000 --env-file .env sourceflow-ai-service
 To run locally, you only need:
 
 1. **Python 3.11+**
-2. **Gemini API Key** (free from Google AI Studio)
+2. **Groq API Key** (free from Groq Console)
 3. **Environment file** (`.env`) with your API key
 
 That's it! No GPU, no heavy ML models, no cloud setup required.
 
 ## Troubleshooting
 
-### "GEMINI_API_KEY not set"
+### "GROQ_API_KEY not set"
 - Make sure you've created a `.env` file
 - Verify the API key is correct
 - Check that the `.env` file is in the `ai-service` directory
 
 ### Rate Limit Errors
-- Free tier has limits: 30 RPM, 1.5K RPD
+- Free tier has generous limits: 250K-300K TPM, 1K RPM
 - Wait a minute if you hit rate limits
 - Consider implementing request queuing for production
 
 ### API Errors
-- Verify your API key is valid at [Google AI Studio](https://aistudio.google.com/app/apikey)
+- Verify your API key is valid at [Groq Console](https://console.groq.com/keys)
 - Check that you haven't exceeded free tier limits
 - Ensure images are in supported formats (JPEG, PNG, WebP)
+- Maximum image size: 20MB (URL) or 4MB (base64)
+- Maximum resolution: 33 megapixels per image
+- Maximum images per request: 5
 
 ## Performance
 
 Target latency: <5 seconds per BOM generation
 Target accuracy: 90%+ material classification accuracy
 
-The Gemini API typically responds in 1-3 seconds, well within our target.
+The Groq API typically responds in 1-3 seconds, well within our target. Groq's fast inference speeds make it ideal for real-time applications.

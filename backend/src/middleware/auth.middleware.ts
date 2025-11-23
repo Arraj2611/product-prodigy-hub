@@ -13,7 +13,7 @@ declare global {
 }
 
 export const authenticate = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, _res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -34,7 +34,7 @@ export const authenticate = asyncHandler(
 
 export const authorize = (...roles: string[]) => {
   return asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (req: Request, _res: Response, next: NextFunction) => {
       if (!req.user) {
         throw new AppError('Authentication required', 401);
       }

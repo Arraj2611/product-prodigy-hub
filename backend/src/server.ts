@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { config } from './config/index.js';
 import logger from './utils/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -14,6 +15,9 @@ import bomRoutes from './routes/bom.routes.js';
 import sourcingRoutes from './routes/sourcing.routes.js';
 import productRoutes from './routes/product.routes.js';
 import complianceRoutes from './routes/compliance.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
+import marketingRoutes from './routes/marketing.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 const app: Express = express();
 
@@ -43,6 +47,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Compression
 app.use(compression());
 
+// Static file serving for local uploads
+if (config.STORAGE_TYPE === 'local') {
+  const uploadsPath = path.resolve(config.STORAGE_LOCAL_PATH || './uploads');
+  app.use('/uploads', express.static(uploadsPath));
+  logger.info(`📁 Serving local uploads from: ${uploadsPath}`);
+}
+
 // Logging
 if (config.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -57,7 +68,7 @@ if (config.NODE_ENV === 'development') {
 }
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -66,7 +77,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-app.get(`/api/${config.API_VERSION}`, (req, res) => {
+app.get(`/api/${config.API_VERSION}`, (_req, res) => {
   res.json({
     success: true,
     message: 'SourceFlow API',
@@ -81,6 +92,9 @@ app.use(`/api/${config.API_VERSION}`, bomRoutes);
 app.use(`/api/${config.API_VERSION}`, productRoutes);
 app.use(`/api/${config.API_VERSION}/sourcing`, sourcingRoutes);
 app.use(`/api/${config.API_VERSION}/compliance`, complianceRoutes);
+app.use(`/api/${config.API_VERSION}/analytics`, analyticsRoutes);
+app.use(`/api/${config.API_VERSION}/marketing`, marketingRoutes);
+app.use(`/api/${config.API_VERSION}`, notificationRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

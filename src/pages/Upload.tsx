@@ -12,18 +12,20 @@ import {
   X,
   Sparkles,
   ArrowRight,
-  Zap
+  Loader2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useDemo } from "@/contexts/DemoContext";
+import { useMutation } from "@tanstack/react-query";
+import { productApi } from "@/services/api/product.api";
+import { uploadApi } from "@/services/api/upload.api";
+import { bomApi } from "@/services/api/bom.api";
 
 export default function Upload() {
   const [files, setFiles] = useState<File[]>([]);
   const [productName, setProductName] = useState("");
   const [description, setDescription] = useState("");
   const navigate = useNavigate();
-  const { startDemo } = useDemo();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -35,49 +37,97 @@ export default function Upload() {
     setFiles(files.filter((_, i) => i !== index));
   };
 
-  const handleUseExample = () => {
-    setProductName("Premium Denim Jacket");
-    setDescription("A high-quality denim jacket with metal buttons, zipper closure, and decorative stitching. Features include two front pockets, adjustable cuffs, and a classic collar design.");
-    
-    // Simulate file upload with a placeholder
-    const exampleFile = new File([""], "denim-jacket.jpg", { type: "image/jpeg" });
-    setFiles([exampleFile]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState<'idle' | 'creating' | 'uploading' | 'generating'>('idle');
 
-    toast.success("Example product loaded! Starting AI analysis...");
-    
-    // Start the demo and navigate through pages
-    setTimeout(() => {
-      startDemo();
-      toast.info("Analyzing product materials...");
-      navigate("/bom");
-      
-      setTimeout(() => {
-        toast.info("Finding best suppliers...");
-        navigate("/sourcing");
-        
+  const createProductMutation = useMutation({
+    mutationFn: productApi.createProduct,
+    onSuccess: async (response) => {
+      const productId = response.data.product.id;
+      setUploadStage('uploading');
+      uploadAssetsMutation.mutate({ productId, files });
+    },
+    onError: (error: any) => {
+      setIsUploading(false);
+      setUploadStage('idle');
+      toast.error("Failed to create product", { description: error.message });
+    },
+  });
+
+  const uploadAssetsMutation = useMutation({
+    mutationFn: ({ productId, files }: { productId: string; files: File[] }) =>
+      uploadApi.uploadAssets(productId, files),
+    onSuccess: (data, variables) => {
+      const productId = variables.productId;
+      if (data.data.assets && data.data.assets.length > 0) {
+        setUploadStage('generating');
+        toast.info("Analyzing product with AI...", {
+          description: "This may take a few moments",
+        });
+        generateBomMutation.mutate({ productId, yieldBuffer: 10.0 });
+      } else {
+        setIsUploading(false);
+        setUploadStage('idle');
+        toast.error("No assets uploaded");
+      }
+    },
+    onError: (error: any) => {
+      setIsUploading(false);
+      setUploadStage('idle');
+      toast.error("Failed to upload assets", { description: error.message });
+    },
+  });
+
+  const generateBomMutation = useMutation({
+    mutationFn: ({ productId, yieldBuffer }: { productId: string; yieldBuffer: number }) =>
+      bomApi.generateBOM(productId, yieldBuffer),
+    onSuccess: (data, variables) => {
+      // Check if BOM generation started (202) or completed (201)
+      if (data.status === 202 || data.data?.status === 'PROCESSING') {
+        // BOM generation started in background
+        toast.info("BOM generation started", {
+          description: "You'll be notified when it's ready. Redirecting to dashboard...",
+        });
+        // Redirect to dashboard after 5 seconds
         setTimeout(() => {
-          toast.info("Generating marketing campaigns...");
-          navigate("/marketing");
-          
-          setTimeout(() => {
-            toast.success("Demo tour complete! Explore the features.");
-          }, 2000);
-        }, 3000);
-      }, 3000);
-    }, 1500);
-  };
+          setIsUploading(false);
+          setUploadStage('idle');
+          navigate(`/dashboard`);
+        }, 5000);
+      } else {
+        // BOM generation completed immediately (shouldn't happen with async, but handle it)
+        setIsUploading(false);
+        setUploadStage('idle');
+        toast.success("BOM generated successfully!", {
+          description: `AI Confidence: ${(data.data.aiResult.confidence * 100).toFixed(0)}%`,
+        });
+        setTimeout(() => {
+          navigate(`/bom?productId=${data.data.bom.productId}&bomId=${data.data.bom.id}`);
+        }, 500);
+      }
+    },
+    onError: (error: any) => {
+      setIsUploading(false);
+      setUploadStage('idle');
+      toast.error("Failed to start BOM generation", { description: error.message });
+      // Still redirect to dashboard so user can see the product
+      setTimeout(() => {
+        navigate(`/dashboard`);
+      }, 2000);
+    },
+  });
 
   const handleSubmit = () => {
     if (!productName || files.length === 0) {
       toast.error("Please add product name and at least one image");
       return;
     }
-    
-    startDemo();
-    toast.success("Product uploaded successfully! AI is analyzing...");
-    setTimeout(() => {
-      navigate("/bom");
-    }, 1500);
+    setIsUploading(true);
+    setUploadStage('creating');
+    createProductMutation.mutate({
+      name: productName,
+      description: description || undefined,
+    });
   };
 
   return (
@@ -89,19 +139,9 @@ export default function Upload() {
             <Sparkles className="w-8 h-8 text-primary" />
             Upload Product
           </h1>
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">
-              Upload images or videos of your product, and let AI decompose it into materials
-            </p>
-            <Button 
-              onClick={handleUseExample}
-              variant="outline"
-              className="gap-2 border-primary/50 hover:bg-primary/10"
-            >
-              <Zap className="w-4 h-4 text-primary" />
-              Use Example Product
-            </Button>
-          </div>
+          <p className="text-muted-foreground">
+            Upload images or videos of your product, and let AI decompose it into materials
+          </p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -116,6 +156,7 @@ export default function Upload() {
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
                   className="bg-background"
+                  disabled={createProductMutation.isPending}
                 />
               </div>
 
@@ -127,6 +168,7 @@ export default function Upload() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="min-h-[120px] bg-background resize-none"
+                  disabled={createProductMutation.isPending}
                 />
                 <p className="text-xs text-muted-foreground">
                   More details help AI generate accurate material breakdown
@@ -143,6 +185,7 @@ export default function Upload() {
                     multiple
                     accept="image/*,video/*"
                     onChange={handleFileChange}
+                    disabled={createProductMutation.isPending}
                   />
                   <label
                     htmlFor="file-upload"
@@ -188,6 +231,7 @@ export default function Upload() {
                           variant="ghost"
                           onClick={() => removeFile(index)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          disabled={createProductMutation.isPending}
                         >
                           <X className="w-4 h-4" />
                         </Button>
@@ -261,10 +305,23 @@ export default function Upload() {
               onClick={handleSubmit}
               className="w-full gap-2 shadow-lg hover:shadow-xl transition-all"
               size="lg"
+              disabled={isUploading || createProductMutation.isPending || uploadAssetsMutation.isPending || generateBomMutation.isPending}
             >
-              <Sparkles className="w-4 h-4" />
-              Generate BOM with AI
-              <ArrowRight className="w-4 h-4" />
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {uploadStage === 'creating' && 'Creating product...'}
+                  {uploadStage === 'uploading' && 'Uploading images...'}
+                  {uploadStage === 'generating' && 'Generating BOM with AI...'}
+                  {uploadStage === 'idle' && 'Processing...'}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate BOM with AI
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </Button>
           </div>
         </div>

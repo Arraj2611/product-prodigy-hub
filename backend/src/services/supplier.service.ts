@@ -1,6 +1,6 @@
 import prisma from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
-import logger from '../utils/logger.js';
+// import logger from '../utils/logger.js'; // Reserved for future use
 
 export interface SupplierSearchParams {
   material?: string;
@@ -85,7 +85,7 @@ export class SupplierService {
   async rankSuppliers(
     materialName: string,
     quantity: number,
-    unit: string
+    _unit: string
   ): Promise<SupplierRanking[]> {
     // Find suppliers with the material
     const suppliers = await prisma.supplier.findMany({
@@ -213,7 +213,7 @@ export class SupplierService {
         location: data.location,
         country: data.country,
         city: data.city,
-        coordinates: data.coordinates || null,
+        coordinates: data.coordinates ? (Array.isArray(data.coordinates) ? data.coordinates as any : null) : null,
         website: data.website,
         contactEmail: data.contactEmail,
         status: 'PENDING_VERIFICATION',

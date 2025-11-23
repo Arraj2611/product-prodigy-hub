@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { getGoogleAuthUrl, getGitHubAuthUrl, handleOAuthCallback } from '../auth/oauth.js';
+import { getGoogleAuthUrl, getGitHubAuthUrl } from '../auth/oauth.js';
+// import { handleOAuthCallback } from '../auth/oauth.js'; // Reserved for future OAuth implementation
 import logger from '../utils/logger.js';
 
 const router = Router();
 
 // Get OAuth URLs
-router.get('/google/url', asyncHandler(async (req, res) => {
+router.get('/google/url', asyncHandler(async (_req, res) => {
   const url = getGoogleAuthUrl();
   res.json({
     success: true,
@@ -15,7 +16,7 @@ router.get('/google/url', asyncHandler(async (req, res) => {
   });
 }));
 
-router.get('/github/url', asyncHandler(async (req, res) => {
+router.get('/github/url', asyncHandler(async (_req, res) => {
   const url = getGitHubAuthUrl();
   res.json({
     success: true,
@@ -24,7 +25,7 @@ router.get('/github/url', asyncHandler(async (req, res) => {
 }));
 
 // OAuth callbacks (simplified - actual implementation would use passport.js)
-router.get('/google/callback', asyncHandler(async (req, res) => {
+router.get('/google/callback', asyncHandler(async (req, _res) => {
   const { code } = req.query;
 
   if (!code) {
@@ -41,7 +42,7 @@ router.get('/google/callback', asyncHandler(async (req, res) => {
   throw new AppError('OAuth callback not fully implemented', 501);
 }));
 
-router.get('/github/callback', asyncHandler(async (req, res) => {
+router.get('/github/callback', asyncHandler(async (req, _res) => {
   const { code } = req.query;
 
   if (!code) {

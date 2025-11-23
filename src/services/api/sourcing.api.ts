@@ -62,11 +62,48 @@ export const sourcingApi = {
     }>(`/sourcing/suppliers/rank?material=${material}&quantity=${quantity}&unit=${unit}`);
   },
 
+  fetchSupplierContact: async (supplierName: string, city: string, country: string, website?: string) => {
+    return apiClient.post<{
+      success: boolean;
+      data: {
+        contactEmail: string;
+        website?: string;
+        found: boolean;
+      };
+    }>('/sourcing/suppliers/fetch-contact', {
+      supplier_name: supplierName,
+      city,
+      country,
+      website,
+    });
+  },
+
   getSupplier: async (supplierId: string) => {
     return apiClient.get<{
       success: boolean;
       data: { supplier: any };
     }>(`/sourcing/suppliers/${supplierId}`);
+  },
+
+  getSuppliers: async (params: {
+    productId?: string;
+    material?: string;
+    country?: string;
+    city?: string;
+    minRating?: number;
+    certifications?: string[];
+    limit?: number;
+    offset?: number;
+  } = {}) => {
+    // If productId is provided, fetch suppliers for that product
+    if (params.productId) {
+      return apiClient.get<{
+        success: boolean;
+        data: { suppliers: any[] };
+      }>(`/sourcing/products/${params.productId}/suppliers`);
+    }
+    // Otherwise use search
+    return sourcingApi.searchSuppliers(params);
   },
 };
 

@@ -1,6 +1,6 @@
 import prisma from '../config/database.js';
 import { AppError } from '../middleware/errorHandler.js';
-import logger from '../utils/logger.js';
+// import logger from '../utils/logger.js'; // Reserved for future use
 
 export interface RiskFactors {
   geopoliticalStability: number; // 0-100

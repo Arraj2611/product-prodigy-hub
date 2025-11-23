@@ -2,8 +2,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PriceTrendChart } from "@/components/charts/PriceTrendChart";
+import { MarketDemandChart } from "@/components/charts/MarketDemandChart";
+import { MarketForecastsList } from "@/components/MarketForecastsList";
 import { WorldMap } from "@/components/WorldMap";
+import { MarketMapWithForecasts } from "@/components/MarketMapWithForecasts";
 import { 
   MapPin, 
   TrendingUp, 
@@ -14,17 +18,38 @@ import {
   ArrowRight,
   Globe,
   LineChart,
-  Upload
+  Upload,
+  Loader2
 } from "lucide-react";
-import { useDemo } from "@/contexts/DemoContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { sourcingApi } from "@/services/api/sourcing.api";
+import { productApi } from "@/services/api/product.api";
+import { useRef } from "react";
 
 export default function Sourcing() {
-  const { isDemoStarted } = useDemo();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const productId = searchParams.get('productId');
+  const clickingRef = useRef<Set<string>>(new Set());
 
-  // If demo not started, show empty state
-  if (!isDemoStarted) {
+  const { data: productsData } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => productApi.getProducts(),
+  });
+
+  const products = productsData?.data?.products || [];
+  const hasProducts = products.length > 0;
+  const currentProduct = productId ? products.find(p => p.id === productId) : products[0];
+
+  // Fetch sourcing data for the current product
+  const { data: sourcingData, isLoading } = useQuery({
+    queryKey: ['sourcing', productId || currentProduct?.id],
+    queryFn: () => sourcingApi.getSuppliers({ productId: productId || currentProduct?.id }),
+    enabled: !!(productId || currentProduct?.id),
+  });
+
+  if (!hasProducts || !currentProduct) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center p-6">
         <Card className="max-w-2xl w-full p-12 text-center border-border/50 bg-card/50 backdrop-blur space-y-6 animate-fade-in">
@@ -34,156 +59,71 @@ export default function Sourcing() {
           <div className="space-y-3">
             <h1 className="text-3xl font-bold">Global Sourcing</h1>
             <p className="text-muted-foreground text-lg">
-              No sourcing data available. Upload a product to discover suppliers.
+              {!hasProducts 
+                ? "No sourcing data available. Upload a product to discover suppliers."
+                : "Please select a product from the dashboard to view sourcing data."}
             </p>
           </div>
           <Button 
-            onClick={() => navigate("/upload")}
+            onClick={() => navigate(hasProducts ? "/dashboard" : "/upload")}
             size="lg"
             className="gap-2"
           >
-            <Upload className="w-5 h-5" />
-            Upload Product
+            {hasProducts ? (
+              <>
+                <Package className="w-5 h-5" />
+                Go to Dashboard
+              </>
+            ) : (
+              <>
+                <Upload className="w-5 h-5" />
+                Upload Product
+              </>
+            )}
           </Button>
         </Card>
       </div>
     );
   }
-  // Supplier locations for map
-  const supplierLocations = [
-    { name: "Kaihara Mills", coordinates: [132.4553, 34.3853] as [number, number], city: "Hiroshima", country: "Japan", type: "supplier" as const, details: "14oz Selvedge Denim", value: "$8.50/m" },
-    { name: "Kurabo Industries", coordinates: [133.9350, 34.6551] as [number, number], city: "Okayama", country: "Japan", type: "supplier" as const, details: "14oz Selvedge Denim", value: "$8.20/m" },
-    { name: "Cone Denim", coordinates: [-80.8431, 35.2271] as [number, number], city: "North Carolina", country: "USA", type: "supplier" as const, details: "14oz Selvedge Denim", value: "$9.00/m" },
-    { name: "Tuscany Hardware Co.", coordinates: [11.2558, 43.7696] as [number, number], city: "Florence", country: "Italy", type: "supplier" as const, details: "Copper Rivets", value: "$0.15/pc" },
-    { name: "Milano Metallics", coordinates: [9.1900, 45.4642] as [number, number], city: "Milan", country: "Italy", type: "supplier" as const, details: "Copper Rivets", value: "$0.13/pc" },
-  ];
 
-  // Market locations for map
-  const marketLocations = [
-    { name: "New York Market", coordinates: [-74.0060, 40.7128] as [number, number], city: "New York", country: "United States", type: "market" as const, details: "High Demand", value: "$185 avg" },
-    { name: "London Market", coordinates: [-0.1276, 51.5074] as [number, number], city: "London", country: "United Kingdom", type: "market" as const, details: "Very High Demand", value: "$165 avg" },
-    { name: "Tokyo Market", coordinates: [139.6917, 35.6895] as [number, number], city: "Tokyo", country: "Japan", type: "market" as const, details: "High Demand", value: "$220 avg" },
-    { name: "Berlin Market", coordinates: [13.4050, 52.5200] as [number, number], city: "Berlin", country: "Germany", type: "market" as const, details: "Medium Demand", value: "$155 avg" },
-    { name: "Sydney Market", coordinates: [151.2093, -33.8688] as [number, number], city: "Sydney", country: "Australia", type: "market" as const, details: "High Demand", value: "$175 avg" },
-  ];
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Loading sourcing data...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const suppliers = [
-    {
-      material: "14oz Selvedge Denim",
-      suppliers: [
-        {
-          name: "Kaihara Mills",
-          location: "Hiroshima, Japan",
-          rating: 4.9,
-          price: "$8.50/meter",
-          moq: "500 meters",
-          leadTime: "45 days",
-          trend: "stable",
-          certifications: ["GOTS", "OEKO-TEX"],
-          reliability: 98
-        },
-        {
-          name: "Kurabo Industries",
-          location: "Okayama, Japan",
-          rating: 4.8,
-          price: "$8.20/meter",
-          moq: "1000 meters",
-          leadTime: "60 days",
-          trend: "down",
-          certifications: ["ISO 9001"],
-          reliability: 96
-        },
-        {
-          name: "Cone Denim",
-          location: "North Carolina, USA",
-          rating: 4.7,
-          price: "$9.00/meter",
-          moq: "300 meters",
-          leadTime: "30 days",
-          trend: "up",
-          certifications: ["GOTS", "Fair Trade"],
-          reliability: 94
-        }
-      ]
-    },
-    {
-      material: "Copper Rivets",
-      suppliers: [
-        {
-          name: "Tuscany Hardware Co.",
-          location: "Florence, Italy",
-          rating: 4.9,
-          price: "$0.15/piece",
-          moq: "5000 pieces",
-          leadTime: "21 days",
-          trend: "stable",
-          certifications: ["ISO 9001"],
-          reliability: 99
-        },
-        {
-          name: "Milano Metallics",
-          location: "Milan, Italy",
-          rating: 4.7,
-          price: "$0.13/piece",
-          moq: "10000 pieces",
-          leadTime: "35 days",
-          trend: "down",
-          certifications: ["CE"],
-          reliability: 95
-        }
-      ]
-    }
-  ];
-
-  const marketData = {
-    globalMarkets: [
-      {
-        country: "United States",
-        city: "New York",
-        demand: "High",
-        avgPrice: "$185",
-        growth: "+12%",
-        trend: "up",
-        marketSize: "$2.4B"
-      },
-      {
-        country: "United Kingdom",
-        city: "London",
-        demand: "Very High",
-        avgPrice: "$165",
-        growth: "+18%",
-        trend: "up",
-        marketSize: "$890M"
-      },
-      {
-        country: "Japan",
-        city: "Tokyo",
-        demand: "High",
-        avgPrice: "$220",
-        growth: "+8%",
-        trend: "stable",
-        marketSize: "$1.2B"
-      },
-      {
-        country: "Germany",
-        city: "Berlin",
-        demand: "Medium",
-        avgPrice: "$155",
-        growth: "+5%",
-        trend: "stable",
-        marketSize: "$650M"
-      },
-      {
-        country: "Australia",
-        city: "Sydney",
-        demand: "High",
-        avgPrice: "$175",
-        growth: "+15%",
-        trend: "up",
-        marketSize: "$450M"
+  const suppliers = sourcingData?.data?.suppliers || [];
+  
+  // Transform supplier data for map - handle both JSON string and object coordinates
+  const supplierLocations = suppliers
+    .filter((s: any) => {
+      if (!s.coordinates) return false;
+      // Handle coordinates as JSON string or object
+      try {
+        const coords = typeof s.coordinates === 'string' ? JSON.parse(s.coordinates) : s.coordinates;
+        return Array.isArray(coords) && coords.length === 2;
+      } catch {
+        return false;
       }
-    ]
-  };
+    })
+    .map((s: any) => {
+      const coords = typeof s.coordinates === 'string' ? JSON.parse(s.coordinates) : s.coordinates;
+      const material = s.materials?.[0];
+      return {
+        name: s.name,
+        coordinates: coords as [number, number],
+        city: s.city || '',
+        country: s.country || '',
+        type: 'supplier' as const,
+        details: material?.materialName || '',
+        value: material?.unitPrice ? `$${Number(material.unitPrice).toFixed(2)}/${material.unit}` : ''
+      };
+    });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
@@ -195,7 +135,7 @@ export default function Sourcing() {
             Global Sourcing & Market Intelligence
           </h1>
           <p className="text-muted-foreground">
-            AI-powered supplier recommendations and demand forecasting across 23 countries
+            AI-powered supplier recommendations and demand forecasting
           </p>
         </div>
 
@@ -208,176 +148,192 @@ export default function Sourcing() {
           {/* Suppliers Tab */}
           <TabsContent value="suppliers" className="space-y-6">
             {/* Interactive World Map */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Globe className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Global Supplier Network</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Interactive map of verified suppliers worldwide
-                  </p>
-                </div>
-              </div>
-              <WorldMap locations={supplierLocations} height={450} />
-            </div>
-
-            {suppliers.map((category, catIndex) => (
-              <Card key={catIndex} className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
-                <div className="p-6 bg-muted/30 border-b border-border/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-bold">{category.material}</h2>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {category.suppliers.length} verified suppliers found
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Compare All
-                    </Button>
+            {supplierLocations.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Globe className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Global Supplier Network</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Interactive map of verified suppliers worldwide
+                    </p>
                   </div>
                 </div>
-                
-                <div className="divide-y divide-border/50">
-                  {category.suppliers.map((supplier, supIndex) => (
-                    <div key={supIndex} className="p-6 hover:bg-muted/20 transition-colors">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{supplier.name}</h3>
-                            <div className="flex items-center gap-1 text-warning">
-                              <Star className="w-4 h-4 fill-current" />
-                              <span className="text-sm font-medium">{supplier.rating}</span>
-                            </div>
-                            {supplier.trend === "up" && (
-                              <Badge variant="outline" className="gap-1 text-destructive border-destructive/30">
-                                <TrendingUp className="w-3 h-3" />
-                                Price Rising
-                              </Badge>
-                            )}
-                            {supplier.trend === "down" && (
-                              <Badge variant="outline" className="gap-1 text-success border-success/30">
-                                <TrendingDown className="w-3 h-3" />
-                                Price Falling
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                            <MapPin className="w-4 h-4" />
-                            <span>{supplier.location}</span>
-                          </div>
+                <WorldMap locations={supplierLocations} height={450} />
+              </div>
+            )}
 
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+            {suppliers.length > 0 ? (
+              <Card className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
+                <div className="p-6 bg-muted/30 border-b border-border/50">
+                  <h2 className="text-xl font-bold">Available Suppliers</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {suppliers.length} verified suppliers found
+                  </p>
+                </div>
+                <Accordion type="single" collapsible className="w-full">
+                  {suppliers.map((supplier: any, index: number) => (
+                    <AccordionItem key={index} value={`supplier-${index}`} className="border-b border-border/50">
+                      <AccordionTrigger className="hover:no-underline px-6 py-4">
+                        <div className="flex items-center justify-between w-full pr-4">
+                          <div className="flex items-center gap-3">
                             <div>
-                              <p className="text-xs text-muted-foreground mb-1">Price</p>
-                              <p className="font-semibold text-primary">{supplier.price}</p>
+                              <h3 className="font-semibold text-lg text-left">{supplier.name}</h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                <MapPin className="w-4 h-4" />
+                                <span>{supplier.city}, {supplier.country}</span>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">MOQ</p>
-                              <p className="font-semibold">{supplier.moq}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Lead Time</p>
-                              <p className="font-semibold">{supplier.leadTime}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Reliability</p>
-                              <p className="font-semibold text-success">{supplier.reliability}%</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {supplier.certifications.map((cert, certIndex) => (
-                              <Badge key={certIndex} variant="secondary" className="text-xs">
-                                {cert}
-                              </Badge>
-                            ))}
+                            {supplier.rating && (
+                              <div className="flex items-center gap-1 text-warning">
+                                <Star className="w-4 h-4 fill-current" />
+                                <span className="text-sm font-medium">{supplier.rating}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-6 pb-6">
+                        <div className="space-y-4">
+                          {/* Basic Info */}
+                          <div className="grid grid-cols-2 gap-4">
+                            {supplier.website && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Website</p>
+                                <a 
+                                  href={supplier.website} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-primary hover:underline"
+                                >
+                                  {supplier.website}
+                                </a>
+                              </div>
+                            )}
+                            {supplier.contactEmail && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Email</p>
+                                <p className="text-sm">{supplier.contactEmail}</p>
+                              </div>
+                            )}
+                            {supplier.reliability && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Reliability</p>
+                                <p className="font-semibold text-success">{supplier.reliability}%</p>
+                              </div>
+                            )}
+                            {(supplier as any).address && (
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Address</p>
+                                <p className="text-sm">{(supplier as any).address}</p>
+                              </div>
+                            )}
+                          </div>
 
-                        <Button className="gap-2">
-                          Contact Supplier
-                          <ArrowRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
+                          {/* Materials */}
+                          {supplier.materials && supplier.materials.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-sm font-semibold mb-2">Materials Offered</p>
+                              {supplier.materials.map((material: any, matIndex: number) => (
+                                <div key={matIndex} className="grid grid-cols-2 md:grid-cols-4 gap-4 p-3 bg-muted/30 rounded-lg">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-1">Material</p>
+                                    <p className="font-semibold text-sm">{material.materialName}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-1">Price</p>
+                                    <p className="font-semibold text-primary">${material.unitPrice}/{material.unit}</p>
+                                  </div>
+                                  {material.moq && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-1">MOQ</p>
+                                      <p className="font-semibold text-sm">{material.moq}</p>
+                                    </div>
+                                  )}
+                                  {material.leadTime && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-1">Lead Time</p>
+                                      <p className="font-semibold text-sm">{material.leadTime}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Certifications */}
+                          {supplier.certifications && supplier.certifications.length > 0 && (
+                            <div>
+                              <p className="text-sm font-semibold mb-2">Certifications</p>
+                              <div className="flex flex-wrap gap-2">
+                                {supplier.certifications.map((cert: any, certIndex: number) => (
+                                  <Badge key={certIndex} variant="outline">
+                                    {cert.type}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Contact Button */}
+                          <div className="pt-2">
+                            <Button 
+                              className="gap-2 w-full"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                if (supplier.website) {
+                                  window.open(supplier.website, '_blank', 'noopener,noreferrer');
+                                } else if (supplier.contactEmail) {
+                                  const subject = encodeURIComponent(`Inquiry about ${supplier.materials?.[0]?.materialName || 'materials'}`);
+                                  const body = encodeURIComponent(`Hello,\n\nI am interested in sourcing ${supplier.materials?.[0]?.materialName || 'materials'} from your company.\n\nCould you please provide more information about:\n- Pricing and MOQ\n- Lead times\n- Certifications\n- Sample availability\n\nThank you!`);
+                                  window.location.href = `mailto:${supplier.contactEmail}?subject=${subject}&body=${body}`;
+                                }
+                              }}
+                            >
+                              {supplier.website ? (
+                                <>
+                                  Visit Website
+                                  <Globe className="w-4 h-4" />
+                                </>
+                              ) : (
+                                <>
+                                  Contact Supplier
+                                  <ArrowRight className="w-4 h-4" />
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               </Card>
-            ))}
+            ) : (
+              <Card className="p-12 text-center border-border/50 bg-card/50 backdrop-blur">
+                <p className="text-muted-foreground">No suppliers found. Generate a BOM first to find suppliers.</p>
+              </Card>
+            )}
 
-            {/* Price Trends Chart */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <LineChart className="w-6 h-6 text-primary" />
+              {/* Price Trends Chart */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <LineChart className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Market Intelligence</h2>
+                    <p className="text-sm text-muted-foreground">
+                      AI-generated material price forecasts
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold">Market Intelligence</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Live commodity pricing and trend analysis
-                  </p>
-                </div>
+                <PriceTrendChart productId={products[0]?.id} />
               </div>
-              <PriceTrendChart />
-            </div>
-
-            {/* Market Insights */}
-            <Card className="p-6 border-border/50 bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur">
-              <h3 className="text-lg font-semibold mb-4">Supply Chain Insights</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Cotton Prices</span>
-                    <Badge variant="outline" className="gap-1 text-destructive border-destructive/30">
-                      <TrendingUp className="w-3 h-3" />
-                      +3.2%
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Rising due to seasonal demand in Asian markets
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Hardware Costs</span>
-                    <Badge variant="outline" className="gap-1 text-success border-success/30">
-                      <TrendingDown className="w-3 h-3" />
-                      -1.8%
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Decreased production costs in European suppliers
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Labor Rates</span>
-                    <Badge variant="outline" className="gap-1 text-warning border-warning/30">
-                      <TrendingUp className="w-3 h-3" />
-                      +2.1%
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Gradual increase in manufacturing wages globally
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Shipping Costs</span>
-                    <Badge variant="outline" className="gap-1 text-success border-success/30">
-                      <TrendingDown className="w-3 h-3" />
-                      -5.4%
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Improved logistics efficiency and fuel savings
-                  </p>
-                </div>
-              </div>
-            </Card>
           </TabsContent>
 
           {/* Markets Tab */}
@@ -391,94 +347,28 @@ export default function Sourcing() {
                 <div>
                   <h2 className="text-xl font-bold">Global Market Opportunities</h2>
                   <p className="text-sm text-muted-foreground">
-                    AI-predicted demand hotspots across 23 countries
+                    AI-predicted demand hotspots across various countries
                   </p>
                 </div>
-              </div>
-              <WorldMap locations={marketLocations} height={450} />
-            </div>
-
-            <Card className="border-border/50 bg-card/50 backdrop-blur overflow-hidden">
-              <div className="p-6 bg-muted/30 border-b border-border/50">
-                <h2 className="text-xl font-bold">Optimal Selling Markets</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  AI-predicted demand and pricing for Premium Denim Jacket
-                </p>
               </div>
               
-              <div className="divide-y divide-border/50">
-                {marketData.globalMarkets.map((market, index) => (
-                  <div key={index} className="p-6 hover:bg-muted/20 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/30 flex items-center justify-center">
-                            <MapPin className="w-6 h-6 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-lg">{market.city}, {market.country}</h3>
-                            <p className="text-sm text-muted-foreground">Market Size: {market.marketSize}</p>
-                          </div>
-                        </div>
+              {/* World Map with Market Locations */}
+              {currentProduct && (
+                <MarketMapWithForecasts productId={currentProduct.id} />
+              )}
+            </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Demand Level</p>
-                            <Badge 
-                              variant={market.demand === "Very High" ? "default" : market.demand === "High" ? "secondary" : "outline"}
-                              className="font-semibold"
-                            >
-                              {market.demand}
-                            </Badge>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Avg. Selling Price</p>
-                            <p className="font-semibold text-lg text-success">{market.avgPrice}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Market Growth</p>
-                            <div className="flex items-center gap-1">
-                              {market.trend === "up" ? (
-                                <TrendingUp className="w-4 h-4 text-success" />
-                              ) : (
-                                <Package className="w-4 h-4 text-muted-foreground" />
-                              )}
-                              <span className="font-semibold">{market.growth}</span>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Profit Margin</p>
-                            <p className="font-semibold text-primary">
-                              ${(parseFloat(market.avgPrice.replace('$', '')) - 42.5).toFixed(0)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+            {/* Market Forecasts List */}
+            {currentProduct && (
+              <MarketForecastsList productId={currentProduct.id} />
+            )}
 
-                      <Button variant="outline" className="gap-2">
-                        <DollarSign className="w-4 h-4" />
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+            {/* Global Market Analysis Chart - At the bottom */}
+            {currentProduct && (
+              <div className="space-y-4">
+                <MarketDemandChart productId={currentProduct.id} />
               </div>
-            </Card>
-
-            <Card className="p-6 border-border/50 bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-semibold">Ready to build your brand?</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Create automated marketing campaigns across all platforms
-                  </p>
-                </div>
-                <Button className="gap-2 shadow-lg">
-                  Launch Marketing
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>

@@ -29,16 +29,21 @@ export interface BOM {
 
 export const bomApi = {
   generateBOM: async (productId: string, yieldBuffer?: number) => {
-    return apiClient.post<{
+    const response = await apiClient.post<{
       success: boolean;
+      message?: string;
       data: {
-        bom: BOM;
-        aiResult: {
+        bom?: BOM;
+        aiResult?: {
           confidence: number;
           processingTime: number;
         };
+        productId?: string;
+        status?: string;
       };
     }>(`/products/${productId}/boms`, { yieldBuffer });
+    // Return response with status code for handling 202 vs 201
+    return { ...response, status: (response as any).status || 201 };
   },
 
   getBOM: async (bomId: string) => {

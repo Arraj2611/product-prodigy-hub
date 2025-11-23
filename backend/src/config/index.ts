@@ -30,7 +30,8 @@ const configSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string().optional(),
 
   // Storage
-  STORAGE_TYPE: z.enum(['s3', 'r2']).default('r2'),
+  STORAGE_TYPE: z.enum(['s3', 'r2', 'local']).default('local'),
+  STORAGE_LOCAL_PATH: z.string().default('./uploads'),
   AWS_REGION: z.string().optional(),
   AWS_ACCESS_KEY_ID: z.string().optional(),
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
