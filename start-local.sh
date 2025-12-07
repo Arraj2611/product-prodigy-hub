@@ -61,6 +61,14 @@ echo -e "${GREEN}✅ Database is ready${NC}"
 echo "🗄️  Setting up database..."
 cd backend
 [ ! -d "node_modules" ] && echo "   Installing dependencies..." && npm install
+
+# Verify prisma.config.ts exists (required for Prisma 7)
+if [ ! -f "prisma.config.ts" ]; then
+  echo -e "${RED}❌ prisma.config.ts not found. This file is required for Prisma 7.${NC}"
+  echo "   Please ensure you have the latest version of the repository."
+  exit 1
+fi
+
 npm run db:generate
 if ! npm run db:push; then
     echo "   Database push failed. This might be a connection issue."

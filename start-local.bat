@@ -109,6 +109,13 @@ if not exist "node_modules" (
     call npm install
 )
 
+REM Verify prisma.config.ts exists (required for Prisma 7)
+if not exist "prisma.config.ts" (
+    echo ❌ prisma.config.ts not found. This file is required for Prisma 7.
+    echo    Please ensure you have the latest version of the repository.
+    exit /b 1
+)
+
 echo    Generating Prisma client...
 call npm run db:generate
 
