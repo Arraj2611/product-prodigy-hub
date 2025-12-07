@@ -113,7 +113,13 @@ echo    Generating Prisma client...
 call npm run db:generate
 
 echo    Running database migrations...
-call npm run db:migrate
+call npm run db:deploy
+if %errorlevel% neq 0 (
+    echo ⚠️  Migration deploy failed. This might be a fresh database.
+    echo    Attempting to reset and apply migrations...
+    call npm run db:reset
+    call npm run db:deploy
+)
 cd ..
 
 echo ✅ Database setup complete

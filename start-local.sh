@@ -62,7 +62,11 @@ echo "🗄️  Setting up database..."
 cd backend
 [ ! -d "node_modules" ] && echo "   Installing dependencies..." && npm install
 npm run db:generate
-npm run db:migrate || echo "   Migrations may have already been applied"
+if ! npm run db:deploy; then
+    echo "   Migration deploy failed. Resetting database and retrying..."
+    npm run db:reset
+    npm run db:deploy
+fi
 cd ..
 echo "🤖 Setting up AI service..."
 cd ai-service
