@@ -427,6 +427,36 @@ product-prodigy-hub/
 
 > 📖 **For comprehensive troubleshooting guide, see the [Troubleshooting section](#-troubleshooting) in the New User Setup Guide above.**
 
+## ☁️ Deployment
+
+### Google Cloud Platform (GCP)
+
+For production deployment to GCP, see the comprehensive deployment guide:
+
+👉 **[Complete GCP Deployment Guide](docs/GCP_DEPLOYMENT_GUIDE.md)**
+
+The guide covers:
+- Step-by-step deployment instructions
+- Cloud Run, Cloud SQL, and Memorystore setup
+- Secrets management and security
+- CI/CD pipeline configuration
+- Monitoring, logging, and cost optimization
+- Troubleshooting and maintenance
+
+### Quick Deployment Overview
+
+**Recommended GCP Services:**
+- **Frontend**: Cloud Storage + Cloud CDN
+- **Backend API**: Cloud Run
+- **AI Service**: Cloud Run
+- **Database**: Cloud SQL (PostgreSQL)
+- **Cache**: Memorystore (Redis)
+- **Storage**: Cloud Storage
+
+**Estimated Monthly Cost:** ~$62-142 (low traffic)
+
+For detailed instructions, see the [GCP Deployment Guide](docs/GCP_DEPLOYMENT_GUIDE.md).
+
 ## 📚 Development
 
 ### Database Management
