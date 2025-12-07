@@ -62,10 +62,9 @@ echo "🗄️  Setting up database..."
 cd backend
 [ ! -d "node_modules" ] && echo "   Installing dependencies..." && npm install
 npm run db:generate
-if ! npm run db:deploy; then
-    echo "   Migration deploy failed. Resetting database and retrying..."
-    npm run db:reset
-    npm run db:deploy
+if ! npm run db:push; then
+    echo "   Database push failed. This might be a connection issue."
+    echo "   Please check that Docker is running and database is accessible."
 fi
 cd ..
 echo "🤖 Setting up AI service..."

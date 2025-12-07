@@ -112,13 +112,11 @@ if not exist "node_modules" (
 echo    Generating Prisma client...
 call npm run db:generate
 
-echo    Running database migrations...
-call npm run db:deploy
+echo    Syncing database schema...
+call npm run db:push
 if %errorlevel% neq 0 (
-    echo ⚠️  Migration deploy failed. This might be a fresh database.
-    echo    Attempting to reset and apply migrations...
-    call npm run db:reset
-    call npm run db:deploy
+    echo ⚠️  Database push failed. This might be a connection issue.
+    echo    Please check that Docker is running and database is accessible.
 )
 cd ..
 
